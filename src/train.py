@@ -195,15 +195,14 @@ def main():
             # calculate ensemble losses
             stu_unsup_preds = list(student_net(tgt_images1))
             tea_unsup_preds = teacher_net(tgt_images0)
-            unsup_losses = []
             loss_expr = 0
             for idx in range(n_discriminators):
                 stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
                 tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
 
                 unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs)
-                unsup_losses.append(unsup_loss)
-                loss_expr += unsup_losses[idx] * unsup_weights[idx]
+                unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
+                loss_expr += unsup_loss * unsup_weights[idx]
             loss_expr += total_seg_loss
             loss_expr = loss_expr / args.iter_size
             loss_expr.backward()
