@@ -20,7 +20,7 @@ If you use this code in your research please consider citing
 
 ## Setup
 * Check out the repo.<br>
-`git clone https://github.com/bkong1990/cycada_release.git`
+`https://github.com/cswin/AWC.git`
 * Download the processed OD and OC image ROIs from:<br>
 [`https://drive.google.com/open?id=1Gi1lT7Sha1UAWMlGiPbU3S4kjd8yKWg1`](https://drive.google.com/open?id=1Gi1lT7Sha1UAWMlGiPbU3S4kjd8yKWg1)
 
