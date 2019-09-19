@@ -15,7 +15,8 @@ If you use this code in your research please consider citing
 }
 ## Requirements
 
-* pytoch
+* python 2.7
+* pytoch 1.0.1
 * albumentations
 
 ## Setup
