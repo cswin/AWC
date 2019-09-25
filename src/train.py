@@ -1,5 +1,6 @@
 import os
-
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="2"
 import torch
 import torch.nn as nn
 from torch.utils import data
@@ -26,7 +27,7 @@ from models.unet import UNet
 from models.discriminator import FCDiscriminator
 from dataset.refuge import REFUGE
 from pytorch_utils import (adjust_learning_rate, adjust_learning_rate_D,
-                           calc_seg_loss, calc_mse_loss)
+                           calc_mse_loss,dice_loss)
 from models import optim_weight_ema
 from arguments import get_arguments
 
@@ -145,8 +146,8 @@ def main():
         d_optimizers.append(optimizer)
 
     calc_bce_loss = torch.nn.BCEWithLogitsLoss()
-    interp = nn.Upsample(size=(input_size[1], input_size[0]), mode='bilinear')
-    interp_tgt = nn.Upsample(size=(tgt_size[1], tgt_size[0]), mode='bilinear')
+    # interp = nn.Upsample(size=(input_size[1], input_size[0]), mode='bilinear')
+    # interp_tgt = nn.Upsample(size=(tgt_size[1], tgt_size[0]), mode='bilinear')
 
     # labels for adversarial training
     source_label, tgt_label = 0, 1
@@ -173,39 +174,34 @@ def main():
                 for param in discriminator.parameters():
                     param.requires_grad = False
 
-            _, src_batch = src_loader_iter.next()
+            _, src_batch = src_loader_iter.__next__()
             _, _, src_images, src_labels, _ = src_batch
+            src_labels = Variable(src_labels).cuda(args.gpu)
             src_images = Variable(src_images).cuda(args.gpu)
 
             # calculate the segmentation losses
             sup_preds = list(student_net(src_images))
             seg_losses, total_seg_loss = [], 0
             for idx, sup_pred in enumerate(sup_preds):
-                sup_interp_pred = interp(sup_pred)
-                seg_loss = calc_seg_loss(sup_interp_pred, src_labels, args.gpu)
-                seg_losses.append(seg_loss)
-                total_seg_loss += seg_losses[idx] * unsup_weights[idx]
-                seg_loss_vals[idx] += seg_losses[idx].item() / args.iter_size
+                sup_interp_pred = (sup_pred)
 
-            _, tgt_batch = tgt_loader_iter.next()
+                [B, C_out, H_out, W_out] = sup_interp_pred.shape
+                sup_interp_pred = sup_interp_pred.view(B, H_out, W_out, C_out)
+
+                seg_loss = dice_loss(src_labels, sup_interp_pred, args.gpu)
+                seg_losses.append(seg_loss)
+                total_seg_loss += seg_loss * unsup_weights[idx]
+                seg_loss_vals[idx] += seg_loss.item() / args.iter_size
+
+            total_seg_loss = total_seg_loss  / args.iter_size
+            total_seg_loss.backward()
+            student_optimizer.step()  # This step is critical to have a trained model prepared for unsupevised learning and weigths adaptation.
+
+            _, tgt_batch = tgt_loader_iter.__next__()
             tgt_images0, tgt_lbl0, tgt_images1, tgt_lbl1, _ = tgt_batch
             tgt_images0 = Variable(tgt_images0).cuda(args.gpu)
             tgt_images1 = Variable(tgt_images1).cuda(args.gpu)
 
-            # calculate ensemble losses
-            stu_unsup_preds = list(student_net(tgt_images1))
-            tea_unsup_preds = teacher_net(tgt_images0)
-            loss_expr = 0
-            for idx in range(n_discriminators):
-                stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
-                tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
-
-                unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs)
-                unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
-                loss_expr += unsup_loss * unsup_weights[idx]
-            loss_expr += total_seg_loss
-            loss_expr = loss_expr / args.iter_size
-            loss_expr.backward()
 
             # As the requires_grad is set to False in the discriminator, the
             # gradients are only accumulated in the generator, the target
@@ -214,7 +210,7 @@ def main():
             stu_unsup_preds = list(student_net(tgt_images0))
             d_outs, loss = [], 0
             for idx in range(n_discriminators):
-                stu_unsup_interp_pred = interp_tgt(stu_unsup_preds[idx])
+                stu_unsup_interp_pred = (stu_unsup_preds[idx])
                 d_outs.append(discriminators[idx](stu_unsup_interp_pred))
                 label_size = d_outs[idx].data.size()
                 labels = torch.FloatTensor(label_size).fill_(source_label)
@@ -225,6 +221,27 @@ def main():
                 adv_tgt_loss_vals[idx] += adv_tgt_loss.item() / args.iter_size
             loss = loss / args.iter_size
             loss.backward()
+            student_optimizer.step()
+
+            # calculate ensemble losses
+            stu_unsup_preds = list(student_net(tgt_images1))
+            tea_unsup_preds = list(teacher_net(tgt_images0))
+            loss_expr = 0
+            for idx in range(n_discriminators):
+                stu_unsup_probs = F.softmax(stu_unsup_preds[idx],dim=-1)
+                tea_unsup_probs = F.softmax(tea_unsup_preds[idx],dim=-1)
+
+                unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs)
+                unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
+                loss_expr += unsup_loss * unsup_weights[idx]
+
+            loss_expr = loss_expr / args.iter_size
+            loss_expr.backward()
+            student_optimizer.step()
+            teacher_optimizer.step()
+            # student_optimizer.step() #This step is critical to have a trained model prepared for unsupevised learning and weigths adaptation.
+
+
 
             # requires_grad is set to True in the discriminator,  we only
             # accumulate gradients in the discriminators, the discriminators are
@@ -262,14 +279,13 @@ def main():
 
         for d_optimizer in d_optimizers:
             d_optimizer.step()
-        student_optimizer.step()
-        teacher_optimizer.step()
+
 
         log_str = 'iter = {0:7d}/{1:7d}'.format(i_iter, args.num_steps)
         log_str += ', total_seg_loss = {0:.3f} '.format(total_seg_loss)
         templ = 'seg_losses = [' + ', '.join(['%.2f'] * len(seg_loss_vals))
         log_str += templ % tuple(seg_loss_vals) + '] '
-        templ = 'ens_losses = [' + ', '.join(['%.2f'] * len(unsup_loss_vals))
+        templ = 'ens_losses = [' + ', '.join(['%.5f'] * len(unsup_loss_vals))
         log_str += templ % tuple(unsup_loss_vals) + '] '
         templ = 'adv_losses = [' + ', '.join(['%.2f'] * len(adv_tgt_loss_vals))
         log_str += templ % tuple(adv_tgt_loss_vals) + '] '

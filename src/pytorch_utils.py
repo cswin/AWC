@@ -2,7 +2,8 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.autograd import Variable
-
+from tensorflow.python.keras import backend as K
+import numpy as np
 
 class CrossEntropy2d(nn.Module):
 
@@ -47,6 +48,8 @@ class LossMulti(nn.Module):
         self.num_classes = num_classes
 
     def __call__(self, outputs, targets):
+        # [N,C,H,W] = outputs.shape
+        # outputs = outputs.view(N,H,W,C)
         loss = (1 - self.jaccard_weight) * F.cross_entropy(outputs, targets, weight=self.nll_weight)
 
         if self.jaccard_weight:
@@ -62,7 +65,7 @@ class LossMulti(nn.Module):
         return loss
 
 
-def calc_seg_loss(pred, label, gpu):
+def calc_seg_loss(label, pred, gpu):
     """
     This function returns cross entropy loss for semantic segmentation
     """
@@ -90,5 +93,67 @@ def adjust_learning_rate_D(optimizer, i_iter, args):
 
 
 def calc_mse_loss(item1, item2):
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss(size_average=False, reduce=True)
     return criterion(item1, item2)
+
+
+def dice_coef(y_true, y_pred,gpu):
+    smooth = 1.
+    y_true_f = torch.flatten(y_true).long().cuda(gpu)
+    y_pred_f = torch.flatten(y_pred).long().cuda(gpu)
+    intersection = (y_true_f * y_pred_f).sum()
+    score = 1 - ((2. * intersection + smooth) / (y_true_f.sum() + y_pred_f.sum() + smooth))
+    return score
+
+def dice_coef2(y_true, y_pred,gpu):
+    # y_pred = y_pred.permute(0,2,3,1)
+    score0 = dice_coef(y_true[:, :, :, 0], y_pred[:, :, :, 0],gpu)
+    score1 = dice_coef(y_true[:, :, :, 1], y_pred[:, :, :, 1],gpu)
+    score = 0.5 * score0 + 0.5 * score1
+
+    return score
+
+
+def dice_coef_loss(y_true, y_pred,gpu):
+    return -dice_coef2(y_true, y_pred,gpu)
+
+
+def dice_loss_calculate(y_true, y_pred, gpu):
+    smooth = 1.
+
+    iflat = y_pred.view(-1).float().cuda(gpu)
+    tflat = y_true.view(-1).float().cuda(gpu)
+    intersection = (iflat * tflat).sum()
+    score = 1 - ((2. * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth))
+    return score
+
+def dice_loss(y_true, y_pred, gpu):
+
+    score0 = dice_loss_calculate(y_true[:, :, :, 0], y_pred[:, :, :, 0],gpu)
+    score1 = dice_loss_calculate(y_true[:, :, :, 1], y_pred[:, :, :, 1],gpu)
+    # score2 = dice_loss_calculate(y_true[:, :, :, 2], y_pred[:, :, :, 2],gpu)
+    score = 0.5 * score0 + 0.5 * score1
+
+    return score
+
+
+
+def ce_loss(true, logits, weights, ignore=255):
+    """Computes the weighted multi-class cross-entropy loss.
+    Args:
+        true: a tensor of shape [B, 1, H, W].
+        logits: a tensor of shape [B, C, H, W]. Corresponds to
+            the raw output or logits of the model.
+        weight: a tensor of shape [C,]. The weights attributed
+            to each class.
+        ignore: the class index to ignore.
+    Returns:
+        ce_loss: the weighted multi-class cross-entropy loss.
+    """
+    ce_loss = F.cross_entropy(
+        logits.float(),
+        true.long(),
+        ignore_index=ignore,
+        weight=weights,
+    )
+    return ce_loss

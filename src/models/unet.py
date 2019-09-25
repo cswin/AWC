@@ -50,6 +50,8 @@ class UNet(nn.Module):
 
     def forward(self, x):
 
+        #input1 = x   # 400x400
+
         input2 = self.AdditionalInput1(x)  #200x200
         input3 = self.AdditionalInput2(x)  # 100x100
         input4 = self.AdditionalInput3(x)  # 50x50
@@ -57,25 +59,25 @@ class UNet(nn.Module):
         ###first level
         x1_conv, x1_downsample = self.down1(x)  #32x200x200
 
-        x1_out = self.x1_out(x1_conv)
+        # x1_out = self.x1_out(x1_conv)
 
         ####second level
         input2 = torch.cat([input2, x1_downsample], dim=1)
         x2_conv, x2_downsample = self.down2(input2) #64x100x100
 
-        x2_out = self.x2_out(x2_conv)
+        # x2_out = self.x2_out(x2_conv)
 
         ####3rd level
         input3 = torch.cat([input3, x2_downsample], dim=1)
         x3_conv, x3_downsample = self.down3(input3)  #128x50x50
 
-        x3_out = self.x3_out(x3_conv)
+        # x3_out = self.x3_out(x3_conv)
 
         ### 4th level
         input4 = torch.cat([input4, x3_downsample], dim=1)
         x4_conv, x4_downsample = self.down4(input4) #256x25x25
 
-        x4_out = self.x4_out(x4_conv)
+        # x4_out = self.x4_out(x4_conv)
 
         ### 5th level
         x5 = self.conv5(x4_downsample) #512x25x25
@@ -105,8 +107,10 @@ class UNet(nn.Module):
 
         #return x1_out, x2_out, x3_out, x4_out, out6, out7, out8, out9, out10
 
+        # [B, C_out, H_out, W_out] = out6.shape
+        #
+        # return out6.view(B, H_out, W_out, C_out), out7.view(B, H_out, W_out, C_out), out8.view(B, H_out, W_out, C_out), out9.view(B, H_out, W_out, C_out), out10.view(B, H_out, W_out, C_out)
         return out6, out7, out8, out9, out10
-
 
 class double_conv(nn.Module):
     '''(conv => BN => ReLU) * 2'''

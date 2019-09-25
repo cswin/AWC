@@ -9,18 +9,27 @@ added by PengLiu 12/08/2018
 
 import os
 import numpy as np
-import glob
 import scipy.misc as m
-
+from matplotlib.pyplot import imread
+import cv2
+import glob
+import matplotlib.pyplot as plt
+from PIL import Image
 import torch
 from torch.autograd import Variable
 import torch.utils.data as data
 
-src_image_dir = '../data/processed/trainImage_save_path_600_aug'
-src_mask_dir = '../data/processed/MaskImage_save_path_600_aug'
-tgt_image_dir ='../data/processed/TestImage_save_path_460_aug/'
-test_image_dir = '../data/processed/valiImage_save_path_460/'
-test_mask_dir = '../data/processed/valiMaskImage_save_path_460/'
+# src_image_dir = '../data/trainImage_save_path_600_aug'
+# src_mask_dir = '../data/MaskImage_save_path_600_aug'
+# tgt_image_dir ='../data/TestImage_save_path_460_aug/'
+# test_image_dir = '../data/valiImage_save_path_460/'
+# test_mask_dir = '../data/valiMaskImage_save_path_460/'
+
+src_image_dir = '../data/training_crop/data'
+src_mask_dir = '../data/training_crop/label'
+tgt_image_dir ='../data/test_crop/data'
+test_image_dir = '../data/validation_crop/data'
+test_mask_dir = '../data/validation_crop/label'
 
 
 class REFUGE(data.Dataset):
@@ -63,13 +72,13 @@ class REFUGE(data.Dataset):
             self.img_dir = test_image_dir
             self.mask_dir = test_mask_dir
 
-        self.class_map = {255: 0, 128: 1, 0: 2}
+        self.class_map = {255: 0, 254: 1, 0: 2}
         self.img_size = (
             img_size if isinstance(img_size, tuple) else (img_size, img_size)
         )
 
         self._glob_img_files()
-        if max_iters is not None:
+        if not max_iters == None:
             self.image_files = self.image_files * int(
                 np.ceil(float(max_iters) / len(self.image_files)))
 
@@ -82,29 +91,44 @@ class REFUGE(data.Dataset):
             tuple: (image, target) where target is index of the target class.
         """
         image_file = self.image_files[index]
-        img = m.imread(image_file)
+        img = imread(image_file)
         img = np.array(img, dtype=np.uint8)
 
         if self.domain != 'REFUGE_DST':
             label_file = os.path.join(self.mask_dir,
                                       os.path.basename(image_file))[:-3] + 'bmp'
-            lbl = m.imread(label_file)
-            lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
+            lbl = imread(label_file)
+            # plt.imshow(lbl)
+            # plt.show()
+            lbl = cv2.resize(lbl,(self.img_size[0], self.img_size[1]),interpolation=cv2.INTER_NEAREST) / 255.0
+            # lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
         else:
-            lbl = np.zeros(self.img_size, dtype=np.uint8)
+            lbl = np.zeros((self.img_size[0], self.img_size[1]), dtype=np.uint8)
 
         if self.augmentations is not None:
-            if self.domain != 'REFUGE_DST':
-                aug = self.augmentations(image=img, mask=lbl)
-            else:
-                aug = self.aug_for_target(image=img, mask=lbl)
+            # if self.domain != 'REFUGE_DST':
+            #     aug = self.augmentations(image=img, mask=lbl)
+            # else:
+            #     aug = self.aug_for_target(image=img, mask=lbl)
+            aug = self.augmentations(image=img, mask=lbl)
             img0, lbl0 = aug['image'], aug['mask']
         else:
             img0, lbl0 = img.copy(), lbl.copy()
 
+        # plt.imshow(img)
+        # plt.show()
+        # plt.imshow(lbl)
+        # plt.show()
+        #
+        # plt.imshow(img0)
+        # plt.show()
+        # plt.imshow(lbl0)
+        # plt.show()
+
         if self.is_transform:
             img, lbl = self.transform(img,lbl)
             img0, lbl0 = self.transform(img0, lbl0)
+
         return img, lbl, img0, lbl0, os.path.basename(image_file)[:-4]
 
     def __len__(self):
@@ -114,11 +138,11 @@ class REFUGE(data.Dataset):
     def _glob_img_files(self):
         """Check if dataset is download and in right place."""
         if self.domain == 'REFUGE_SRC':
-            self.image_files = glob.glob(os.path.join(self.img_dir, '*.jpg'))
+            self.image_files = glob.glob(os.path.join(self.img_dir, '*.bmp'))
         if self.domain == 'REFUGE_DST':
-            self.image_files = glob.glob(os.path.join(self.img_dir, '*.jpg'))
+            self.image_files = glob.glob(os.path.join(self.img_dir, '*.bmp'))
         if self.domain == 'REFUGE_TEST':
-            self.image_files = glob.glob(os.path.join(self.img_dir, '*.jpg'))
+            self.image_files = glob.glob(os.path.join(self.img_dir, '*.bmp'))
 
     def transform(self, img, lbl):
         """transform
@@ -128,19 +152,10 @@ class REFUGE(data.Dataset):
         img = m.imresize(
             img, (self.img_size[0], self.img_size[1])
         )  # uint8 with RGB mode
-        img = img[:, :, ::-1]  # RGB -> BGR
+        # img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
 
         img = img.transpose(2, 0, 1)
-
-        classes = np.unique(lbl)
-        lbl = lbl.astype(float)
-        lbl = m.imresize(lbl, (self.img_size[0], self.img_size[1]),
-                         "nearest", mode="F")
-        lbl = lbl.astype(int)
-
-        if not np.all(classes == np.unique(lbl)):
-            print("WARN: resizing labels yielded fewer classes")
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).long()
@@ -172,3 +187,4 @@ class REFUGE(data.Dataset):
         img_np_aug = Variable(img_np_aug).cuda()
         lbl_aug = Variable(lbl_aug).cuda()
         return img_np_aug, lbl_aug
+
