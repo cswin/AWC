@@ -15,31 +15,25 @@ If you use this code in your research please consider citing
 }
 ## Requirements
 
-* python 2.7
-* pytoch 1.0.1
+* python 3.6
+* pytoch 1.0.0
 * albumentations
-
-## Setup
-* Check out the repo.<br>
-`https://github.com/cswin/AWC.git`
-* Download the processed OD and OC image ROIs from:<br>
-[`https://drive.google.com/open?id=1Gi1lT7Sha1UAWMlGiPbU3S4kjd8yKWg1`](https://drive.google.com/open?id=1Gi1lT7Sha1UAWMlGiPbU3S4kjd8yKWg1)
-
+ 
 ### Usage
-1. Train the model:
+1. uncompress the sample data from data/
+
+2. Train the model:
  
    ```shell
    cd src
-   python main.py
+   python train.py
    ```
-2. Predict the masks:
+3. Predict the masks:
 
    ```shell
    python predict.py
    ```
-3. Evaluate the model:
 
-   Coming soon.
    
 ### Questions
 
