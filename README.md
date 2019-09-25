@@ -20,7 +20,7 @@ If you use this code in your research please consider citing
 * albumentations
  
 ### Usage
-1. uncompress the sample data from data/
+1. uncompress the sample data from the data folder  
 
 2. Train the model:
  
