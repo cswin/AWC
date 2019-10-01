@@ -13,23 +13,16 @@ import scipy.misc as m
 from matplotlib.pyplot import imread
 import cv2
 import glob
-import matplotlib.pyplot as plt
-from PIL import Image
 import torch
-from torch.autograd import Variable
 import torch.utils.data as data
 
-# src_image_dir = '../data/trainImage_save_path_600_aug'
-# src_mask_dir = '../data/MaskImage_save_path_600_aug'
-# tgt_image_dir ='../data/TestImage_save_path_460_aug/'
-# test_image_dir = '../data/valiImage_save_path_460/'
-# test_mask_dir = '../data/valiMaskImage_save_path_460/'
 
-src_image_dir = '../data/training_crop/data'
-src_mask_dir = '../data/training_crop/label'
-tgt_image_dir ='../data/test_crop/data'
-test_image_dir = '../data/validation_crop/data'
-test_mask_dir = '../data/validation_crop/label'
+
+src_image_dir = '../data/training_crop_s600/data'
+src_mask_dir = '../data/training_crop_s600/label'
+tgt_image_dir ='../data/test_crop_s460/data'
+test_image_dir = '../data/validation_crop_s460/data'
+test_mask_dir = '../data/validation_crop_s460/label'
 
 
 class REFUGE(data.Dataset):
@@ -47,10 +40,10 @@ class REFUGE(data.Dataset):
     """
 
     def __init__(
-        self, 
-        train=True, 
-        domain='REFUGE_SRC', 
-        is_transform=False, 
+        self,
+        train=True,
+        domain='REFUGE_SRC',
+        is_transform=False,
         augmentations=None,
         aug_for_target=None,
         img_size=(400, 400),
@@ -72,7 +65,6 @@ class REFUGE(data.Dataset):
             self.img_dir = test_image_dir
             self.mask_dir = test_mask_dir
 
-        self.class_map = {255: 0, 254: 1, 0: 2}
         self.img_size = (
             img_size if isinstance(img_size, tuple) else (img_size, img_size)
         )
@@ -97,33 +89,21 @@ class REFUGE(data.Dataset):
         if self.domain != 'REFUGE_DST':
             label_file = os.path.join(self.mask_dir,
                                       os.path.basename(image_file))[:-3] + 'bmp'
-            lbl = imread(label_file)
-            # plt.imshow(lbl)
-            # plt.show()
-            lbl = cv2.resize(lbl,(self.img_size[0], self.img_size[1]),interpolation=cv2.INTER_NEAREST) / 255.0
-            # lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
+            lbl_ori = imread(label_file)
+            lbl = lbl_ori.copy()
+            lbl[lbl>200] = 255
+            lbl = cv2.resize(lbl,(self.img_size[0], self.img_size[1]),interpolation=cv2.INTER_NEAREST)
+            lbl = lbl / 255.0
+
         else:
             lbl = np.zeros((self.img_size[0], self.img_size[1]), dtype=np.uint8)
 
         if self.augmentations is not None:
-            # if self.domain != 'REFUGE_DST':
-            #     aug = self.augmentations(image=img, mask=lbl)
-            # else:
-            #     aug = self.aug_for_target(image=img, mask=lbl)
             aug = self.augmentations(image=img, mask=lbl)
             img0, lbl0 = aug['image'], aug['mask']
         else:
             img0, lbl0 = img.copy(), lbl.copy()
 
-        # plt.imshow(img)
-        # plt.show()
-        # plt.imshow(lbl)
-        # plt.show()
-        #
-        # plt.imshow(img0)
-        # plt.show()
-        # plt.imshow(lbl0)
-        # plt.show()
 
         if self.is_transform:
             img, lbl = self.transform(img,lbl)
@@ -152,7 +132,7 @@ class REFUGE(data.Dataset):
         img = m.imresize(
             img, (self.img_size[0], self.img_size[1])
         )  # uint8 with RGB mode
-        # img = img[:, :, ::-1]  # RGB -> BGR
+
         img = img.astype(np.float64)
 
         img = img.transpose(2, 0, 1)
@@ -162,29 +142,5 @@ class REFUGE(data.Dataset):
 
         return img, lbl
 
-    def encode_segmap(self, mask):
-        # Put all void classes to zero
-        classes = np.unique(mask)
-        for each_class in classes:
-            assert each_class in self.class_map.keys()
 
-        for _validc in self.class_map.keys():
-            mask[mask == _validc] = self.class_map[_validc]
-        return mask
-
-    def reapply_spatial_aug(self, img, lbl, spatial_augs):
-        img_np = img.cpu().data.numpy().transpose(0, 2, 3, 1)
-        img_np_aug = img_np.copy()
-        lbl_np = lbl.data.numpy()
-        lbl_aug = lbl_np.copy()
-        n_img = img.shape[0]
-        for idx in range(n_img):
-            aug = spatial_augs[idx].call_again(image=img_np[idx],
-                                               mask=lbl_np[idx])
-            img_np_aug[idx], lbl_aug[idx] = aug['image'], aug['mask']
-        img_np_aug = torch.from_numpy(img_np_aug.transpose(0, 3, 1, 2)).float()
-        lbl_aug = torch.from_numpy(lbl_aug).long()
-        img_np_aug = Variable(img_np_aug).cuda()
-        lbl_aug = Variable(lbl_aug).cuda()
-        return img_np_aug, lbl_aug
 

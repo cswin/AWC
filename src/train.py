@@ -1,8 +1,8 @@
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import torch
-import torch.nn as nn
 from torch.utils import data
 from torch.autograd import Variable
 import torch.optim as optim
@@ -25,9 +25,9 @@ from albumentations import (
 
 from models.unet import UNet
 from models.discriminator import FCDiscriminator
-from dataset.refuge import REFUGE
+from dataset.refuge2 import REFUGE
 from pytorch_utils import (adjust_learning_rate, adjust_learning_rate_D,
-                           calc_mse_loss,dice_loss)
+                           calc_mse_loss, dice_loss)
 from models import optim_weight_ema
 from arguments import get_arguments
 
@@ -36,46 +36,27 @@ aug = Compose([
         Transpose(p=0.5),
         HorizontalFlip(p=0.5),
         VerticalFlip(p=0.5),
-        RandomRotate90(p=0.5)], p=0.8),
+        RandomRotate90(p=0.5)], p=0.2),
 
     OneOf([
         IAAAdditiveGaussianNoise(p=0.5),
         GaussNoise(p=0.5),
-    ], p=0.3),
+    ], p=0.2),
 
     OneOf([
         CLAHE(clip_limit=2),
         IAASharpen(p=0.5),
         IAAEmboss(p=0.5),
         RandomBrightnessContrast(p=0.5),
-    ], p=0.3),
-    HueSaturationValue(p=0.3),
-    RandomGamma(p=0.3)])
-
-aug_for_tgt = Compose([
-    OneOf([
-        IAAAdditiveGaussianNoise(p=0.5),
-        GaussNoise(p=0.5),
-    ], p=0.5),
-
-    OneOf([
-        CLAHE(clip_limit=2),
-        IAASharpen(p=0.5),
-        IAAEmboss(p=0.5),
-        RandomBrightnessContrast(p=0.5),
-    ], p=0.5),
-    HueSaturationValue(p=0.5),
-    RandomGamma(p=0.5)])
+    ], p=0.2),
+    HueSaturationValue(p=0.2),
+    RandomGamma(p=0.2)])
 
 
 def main():
     """Create the model and start the training."""
     args = get_arguments()
 
-    w, h = map(int, args.input_size.split(','))
-    input_size = (w, h)
-    w, h = map(int, args.tgt_size.split(','))
-    tgt_size = (w, h)
     cudnn.enabled = True
     n_discriminators = 5
 
@@ -146,8 +127,6 @@ def main():
         d_optimizers.append(optimizer)
 
     calc_bce_loss = torch.nn.BCEWithLogitsLoss()
-    # interp = nn.Upsample(size=(input_size[1], input_size[0]), mode='bilinear')
-    # interp_tgt = nn.Upsample(size=(tgt_size[1], tgt_size[0]), mode='bilinear')
 
     # labels for adversarial training
     source_label, tgt_label = 0, 1
@@ -165,7 +144,7 @@ def main():
 
         student_optimizer.zero_grad()
         adjust_learning_rate(student_optimizer, i_iter, args)
-        
+
         for sub_i in range(args.iter_size):
 
             # ******** Optimize source network with segmentation loss ********
@@ -193,15 +172,14 @@ def main():
                 total_seg_loss += seg_loss * unsup_weights[idx]
                 seg_loss_vals[idx] += seg_loss.item() / args.iter_size
 
-            total_seg_loss = total_seg_loss  / args.iter_size
+            total_seg_loss = total_seg_loss / args.iter_size
             total_seg_loss.backward()
-            student_optimizer.step()  # This step is critical to have a trained model prepared for unsupevised learning and weigths adaptation.
+            student_optimizer.step()  # to have a trained model prepared for unsupevised learning and weigths adaptation.
 
             _, tgt_batch = tgt_loader_iter.__next__()
             tgt_images0, tgt_lbl0, tgt_images1, tgt_lbl1, _ = tgt_batch
             tgt_images0 = Variable(tgt_images0).cuda(args.gpu)
             tgt_images1 = Variable(tgt_images1).cuda(args.gpu)
-
 
             # As the requires_grad is set to False in the discriminator, the
             # gradients are only accumulated in the generator, the target
@@ -228,10 +206,10 @@ def main():
             tea_unsup_preds = list(teacher_net(tgt_images0))
             loss_expr = 0
             for idx in range(n_discriminators):
-                stu_unsup_probs = F.softmax(stu_unsup_preds[idx],dim=-1)
-                tea_unsup_probs = F.softmax(tea_unsup_preds[idx],dim=-1)
+                stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
+                tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
 
-                unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs)
+                unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
                 unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
                 loss_expr += unsup_loss * unsup_weights[idx]
 
@@ -239,9 +217,6 @@ def main():
             loss_expr.backward()
             student_optimizer.step()
             teacher_optimizer.step()
-            # student_optimizer.step() #This step is critical to have a trained model prepared for unsupevised learning and weigths adaptation.
-
-
 
             # requires_grad is set to True in the discriminator,  we only
             # accumulate gradients in the discriminators, the discriminators are
@@ -279,7 +254,6 @@ def main():
 
         for d_optimizer in d_optimizers:
             d_optimizer.step()
-
 
         log_str = 'iter = {0:7d}/{1:7d}'.format(i_iter, args.num_steps)
         log_str += ', total_seg_loss = {0:.3f} '.format(total_seg_loss)
