@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
+# this code is modified from https://github.com/HzFu/MNet_DeepCDR/tree/master/mnet_deep_cdr
 
 from __future__ import print_function
-
 from os import path
-from sys import modules
 from time import time
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
