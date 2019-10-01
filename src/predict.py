@@ -10,7 +10,6 @@ os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import cv2
 import numpy as np
 from PIL import Image
-from pkg_resources import resource_filename
 from skimage.measure import label, regionprops
 from skimage.transform import rotate, resize
 from tensorflow.python.keras.preprocessing import image
