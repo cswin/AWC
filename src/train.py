@@ -1,7 +1,7 @@
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import torch
 from torch.utils import data
 from torch.autograd import Variable
@@ -32,11 +32,6 @@ from models import optim_weight_ema
 from arguments import get_arguments
 
 aug = Compose([
-    OneOf([
-        Transpose(p=0.5),
-        HorizontalFlip(p=0.5),
-        VerticalFlip(p=0.5),
-        RandomRotate90(p=0.5)], p=0.2),
 
     OneOf([
         IAAAdditiveGaussianNoise(p=0.5),
@@ -103,7 +98,7 @@ def main():
 
     src_loader_iter = enumerate(src_loader)
     tgt_set = REFUGE(True, domain='REFUGE_DST', is_transform=True,
-                     augmentations=aug, aug_for_target=aug_for_tgt,
+                     augmentations=aug, aug_for_target=aug,
                      max_iters=max_iters)
     tgt_loader = data.DataLoader(tgt_set,
                                  batch_size=args.batch_size,
@@ -269,14 +264,14 @@ def main():
         print(log_str)
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
-            filename = 'UNet' + str(args.num_steps_stop) + '.pth'
+            filename = 'UNet' + str(args.num_steps_stop) + 'v9.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
-            filename = 'UNet' + str(i_iter) + '.pth'
+            filename = 'UNet' + str(i_iter) + 'v9.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             teacher_net.cuda(args.gpu)

@@ -29,14 +29,15 @@ parent_dir = "../data/"
 gpu = 1
 
 test_data_path = path.join(parent_dir, 'Validation400')
-data_save_path = mk_dir(path.join(parent_dir, 'result'))
+data_save_path_ROI = mk_dir(path.join(parent_dir, 'resultROI'))
+data_save_path_whole = mk_dir(path.join(parent_dir, 'resultWhole'))
 
 file_test_list = files_with_ext(test_data_path, '.jpg')
 
 DiscSeg_model = DeepModel(size_set=DiscSeg_size)
 DiscSeg_model.load_weights('./data_preprocess/Model_DiscSeg_ORIGA.h5')
 
-model_path = path.join(parent_dir, 'snapshots', "UNet55000v7.pth")
+model_path = path.join(parent_dir, 'snapshots', "UNet80000v7.pth")
 
 JoinSeg_model = UNet(3, n_classes=2)
 saved_state_dict = torch.load(model_path)
@@ -124,7 +125,7 @@ for lineIdx, temp_txt in enumerate(file_test_list):
     plt.show()
 
     ROI_result_save = Image.fromarray(ROI_result)
-    ROI_result_save.save(path.join(data_save_path, temp_txt[:-4] + '_ROI.png'))
+    ROI_result_save.save(path.join(data_save_path_ROI, temp_txt[:-4] + '_ROI.png'))
 
     Img_result = np.ones((org_img.shape[0], org_img.shape[1]), dtype=np.int8)*255
     plt.imshow(Img_result)
@@ -133,4 +134,4 @@ for lineIdx, temp_txt in enumerate(file_test_list):
     plt.imshow(Img_result)
     plt.show()
     save_result = Image.fromarray(Img_result.astype(np.uint8))
-    save_result.save(path.join(data_save_path, temp_txt[:-4] + '.png'))
+    save_result.save(path.join(data_save_path_whole, temp_txt[:-4] + '.png'))
