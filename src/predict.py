@@ -37,7 +37,7 @@ file_test_list = files_with_ext(test_data_path, '.jpg')
 DiscSeg_model = DeepModel(size_set=DiscSeg_size)
 DiscSeg_model.load_weights('./data_preprocess/Model_DiscSeg_ORIGA.h5')
 
-model_path = path.join(parent_dir, 'snapshots', "UNet80000v7.pth")
+model_path = path.join(parent_dir, 'snapshots', "UNet60000v8.pth")
 
 JoinSeg_model = UNet(3, n_classes=2)
 saved_state_dict = torch.load(model_path)

@@ -1,7 +1,7 @@
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import torch
 from torch.utils import data
 from torch.autograd import Variable
@@ -25,14 +25,18 @@ from albumentations import (
 
 from models.unet import UNet
 from models.discriminator import FCDiscriminator
-from dataset.refuge2 import REFUGE
+from dataset.refuge import REFUGE
 from pytorch_utils import (adjust_learning_rate, adjust_learning_rate_D,
                            calc_mse_loss, dice_loss)
 from models import optim_weight_ema
 from arguments import get_arguments
 
 aug = Compose([
-
+    OneOf([
+        Transpose(p=0.5),
+        HorizontalFlip(p=0.5),
+        VerticalFlip(p=0.5),
+        RandomRotate90(p=0.5)], p=0.2),
     OneOf([
         IAAAdditiveGaussianNoise(p=0.5),
         GaussNoise(p=0.5),

@@ -24,9 +24,6 @@ def calc_mse_loss(item1, item2, batch_size):
     criterion = nn.MSELoss(reduce=False)
     return criterion(item1, item2).sum() / batch_size
 
-def calc_mse_loss2(item1, item2, batch_size):
-    criterion = nn.MSELoss(reduce=False)
-    return criterion(item1, item2).sum() / batch_size
 
 def dice_loss_calculate(y_true, y_pred, gpu):
     smooth = 1.

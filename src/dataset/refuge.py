@@ -99,12 +99,15 @@ class REFUGE(data.Dataset):
             lbl = np.zeros((self.img_size[0], self.img_size[1]), dtype=np.uint8)
 
         if self.augmentations is not None:
-            #target data augmentation
-            aug = self.augmentations(image=img, mask=lbl)
-            img0, lbl0 = aug['image'], aug['mask']
+
             #source data augmentation
             aug = self.augmentations(image=img, mask=lbl)
             img, lbl = aug['image'], aug['mask']
+
+            #target data augmentation
+            aug = self.augmentations(image=img, mask=lbl)
+            img0, lbl0 = aug['image'], aug['mask']
+
         else:
             img0, lbl0 = img.copy(), lbl.copy()
 
