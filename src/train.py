@@ -32,11 +32,7 @@ from models import optim_weight_ema
 from arguments import get_arguments
 
 aug = Compose([
-    OneOf([
-        Transpose(p=0.5),
-        HorizontalFlip(p=0.5),
-        VerticalFlip(p=0.5),
-        RandomRotate90(p=0.5)], p=0.2),
+
     OneOf([
         IAAAdditiveGaussianNoise(p=0.5),
         GaussNoise(p=0.5),

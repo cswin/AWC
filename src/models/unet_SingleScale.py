@@ -8,33 +8,34 @@ import torch.nn.functional as F
 
 
 
+
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes):
 
         super(UNet, self).__init__()
         self.down1 = down(n_channels, 32)
-        self.AdditionalInput1 = AdditionalInput(2, 3, 64)
+        # self.AdditionalInput1 = AdditionalInput(2, 3, 64)
         # self.single_conv1 = single_conv(3, 64)
 
-        self.x1_out = outconv(32, n_classes)
+        # self.x1_out = outconv(32, n_classes)
 
-        self.down2 = down(96, 64)
-        self.AdditionalInput2 = AdditionalInput(4, 3, 128)
+        self.down2 = down(32, 64)
+        # self.AdditionalInput2 = AdditionalInput(4, 3, 128)
         # self.single_conv2 = single_conv(3, 128)
 
-        self.x2_out = outconv(64, n_classes)
+        # self.x2_out = outconv(64, n_classes)
 
-        self.down3 = down(192, 128)
-        self.AdditionalInput3 = AdditionalInput(8, 3, 256)
+        self.down3 = down(64, 128)
+        # self.AdditionalInput3 = AdditionalInput(8, 3, 256)
         # self.single_conv3 = single_conv(3, 256)
 
-        self.x3_out = outconv(128, n_classes)
+        # self.x3_out = outconv(128, n_classes)
 
-        self.down4 = down(384, 256)
+        self.down4 = down(128, 256)
 
-        self.x4_out = outconv(256, n_classes)
+        # self.x4_out = outconv(256, n_classes)
 
-        self.down5 = down(256, 256)
+        # self.down5 = down(256, 512)
 
         self.conv5 = double_conv(256,512)
 
@@ -50,50 +51,41 @@ class UNet(nn.Module):
 
     def forward(self, x):
 
-        #input1 = x   # 400x400
-
-        input2 = self.AdditionalInput1(x)  #200x200
-        input3 = self.AdditionalInput2(x)  # 100x100
-        input4 = self.AdditionalInput3(x)  # 50x50
 
         ###first level
         x1_conv, x1_downsample = self.down1(x)  #32x200x200
 
-        # x1_out = self.x1_out(x1_conv)
 
         ####second level
-        input2 = torch.cat([input2, x1_downsample], dim=1)
-        x2_conv, x2_downsample = self.down2(input2) #64x100x100
 
-        # x2_out = self.x2_out(x2_conv)
+        x2_conv, x2_downsample = self.down2(x1_downsample) #64x100x100
+
 
         ####3rd level
-        input3 = torch.cat([input3, x2_downsample], dim=1)
-        x3_conv, x3_downsample = self.down3(input3)  #128x50x50
 
-        # x3_out = self.x3_out(x3_conv)
+        x3_conv, x3_downsample = self.down3(x2_downsample)  #128x50x50
+
 
         ### 4th level
-        input4 = torch.cat([input4, x3_downsample], dim=1)
-        x4_conv, x4_downsample = self.down4(input4) #256x25x25
 
-        # x4_out = self.x4_out(x4_conv)
+        x4_conv, x4_downsample = self.down4(x3_downsample) #256x25x25
+
 
         ### 5th level
         x5 = self.conv5(x4_downsample) #512x25x25
 
         ### -4th level
         x6 = self.up1(x5, x4_conv) #256x50x50
-        side6 = nn.Upsample(scale_factor=8, mode='bilinear', align_corners=True)(x6)
+        side6 = nn.Upsample(scale_factor=8, mode='bilinear', align_corners=True)(x6) #512x400x400
 
         ### -3th level
-        x7 = self.up2(x6, x3_conv) #128x100x100
+        x7 = self.up2(x6, x3_conv) #256x100x100
         side7 = nn.Upsample(scale_factor=4, mode='bilinear', align_corners=True)(x7)
 
-        x8 = self.up3(x7, x2_conv)
+        x8 = self.up3(x7, x2_conv) #128x100x100
         side8 = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)(x8)
 
-        x9 = self.up4(x8, x1_conv)
+        x9 = self.up4(x8, x1_conv) #64x400x400
 
         out6 = self.out6(side6)
         out7 = self.out7(side7)
@@ -194,10 +186,7 @@ class up(nn.Module):
 
         input_1 = F.pad(input_1, (diffX // 2, diffX - diffX//2,
                         diffY // 2, diffY - diffY//2))
-        
-        # for padding issues, see 
-        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
-        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
+
 
         x = torch.cat([input_2, input_1], dim=1)
         x = self.conv(x)

@@ -100,11 +100,11 @@ class REFUGE(data.Dataset):
 
         if self.augmentations is not None:
 
-            #source data augmentation
+            # data augmentation for student
             aug = self.augmentations(image=img, mask=lbl)
             img, lbl = aug['image'], aug['mask']
 
-            #target data augmentation
+            # data augmentation for teacher
             aug = self.augmentations(image=img, mask=lbl)
             img0, lbl0 = aug['image'], aug['mask']
 
