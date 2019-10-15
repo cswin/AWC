@@ -20,7 +20,7 @@ If you use this code in your research please consider citing
 * albumentations
  
 ### Usage
-1. uncompress the sample data from the data folder  
+1.  Get the data from https://refuge.grand-challenge.org and go to src/data_preprocess/generate_ROI.py 
 
 2. Train the model:
  
