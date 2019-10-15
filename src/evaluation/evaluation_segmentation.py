@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import misc
 from os import path, makedirs
 import glob
+from file_management import save_csv_mean_segmentation_performance, save_csv_segmentation_table
 
 EPS = 1e-7
 
@@ -268,15 +269,16 @@ def evaluate_segmentation_results(segmentation_folder, gt_folder, output_path=No
         # initialize the output filename
         output_filename = path.join(output_path, 'evaluation_segmentation.csv')
         # save the results
-        #save_csv_mean_segmentation_performance(output_filename, mean_cup_dice, mean_disc_dice, mae_cdr)
+        save_csv_mean_segmentation_performance(output_filename, mean_cup_dice, mean_disc_dice, mae_cdr)
 
     # return the average performance
     return mean_cup_dice, mean_disc_dice, mae_cdr
 
 if __name__ == '__main__':
 
-    results_folder = '../../data/interim/GTA5_spacial_temporal_v13_04210623_150000/'
-    # gt_folder = './../data/processed/valiMaskImage_save_path_460/'
+    results_folder = '../../data/result_UNet140000v12_Vmiccai/'
+    gt_folder = '../../data/valiMaskImage_save_path_460/'
 
-    gt_folder = './../data/processed/valiMaskImage_save_path_460/'
-    evaluate_segmentation_results(results_folder, gt_folder)
+    output_path = results_folder
+    export_table = True
+    evaluate_segmentation_results(results_folder, gt_folder, output_path, export_table)

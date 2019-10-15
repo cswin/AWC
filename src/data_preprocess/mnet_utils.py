@@ -70,9 +70,14 @@ def dice_coef_loss(y_true, y_pred):
     return dice_coef2(y_true, y_pred)
 
 
+
 def disc_crop(org_img, DiscROI_size, C_x, C_y):
-    tmp_size = int(DiscROI_size / 2)
-    disc_region = np.zeros((DiscROI_size, DiscROI_size, 3), dtype=org_img.dtype)
+    tmp_size = int(DiscROI_size / 2);
+    if len(org_img.shape) == 2:
+        disc_region = np.zeros((DiscROI_size, DiscROI_size), dtype=org_img.dtype)
+    else:
+        disc_region = np.zeros((DiscROI_size, DiscROI_size, 3), dtype=org_img.dtype)
+
     crop_coord = np.array([C_x - tmp_size, C_x + tmp_size, C_y - tmp_size, C_y + tmp_size], dtype=int)
     err_coord = [0, DiscROI_size, 0, DiscROI_size]
 
@@ -91,11 +96,12 @@ def disc_crop(org_img, DiscROI_size, C_x, C_y):
     if crop_coord[3] > org_img.shape[1]:
         err_coord[3] = err_coord[3] - (crop_coord[3] - org_img.shape[1])
         crop_coord[3] = org_img.shape[1]
-
-    disc_region[err_coord[0]:err_coord[1], err_coord[2]:err_coord[3], ] = org_img[
-                                                                          crop_coord[0]:crop_coord[1],
-                                                                          crop_coord[2]:crop_coord[3],
-                                                                          ]
+    if len(org_img.shape) == 2:
+        disc_region[err_coord[0]:err_coord[1], err_coord[2]:err_coord[3]] = org_img[crop_coord[0]:crop_coord[1],
+                                                                            crop_coord[2]:crop_coord[3]]
+    else:
+        disc_region[err_coord[0]:err_coord[1], err_coord[2]:err_coord[3], ] = org_img[crop_coord[0]:crop_coord[1],
+                                                                              crop_coord[2]:crop_coord[3], ]
 
     return disc_region, err_coord, crop_coord
 

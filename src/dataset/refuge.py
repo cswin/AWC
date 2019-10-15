@@ -64,7 +64,7 @@ class REFUGE(data.Dataset):
         if domain == 'REFUGE_TEST':
             self.img_dir = test_image_dir
             self.mask_dir = test_mask_dir
-
+        self.class_map = {0: 2, 128: 1, 255: 0}
         self.img_size = (
             img_size if isinstance(img_size, tuple) else (img_size, img_size)
         )
@@ -91,9 +91,8 @@ class REFUGE(data.Dataset):
                                       os.path.basename(image_file))[:-3] + 'bmp'
             lbl_ori = imread(label_file)
             lbl = lbl_ori.copy()
-            lbl[lbl>200] = 255
             lbl = cv2.resize(lbl,(self.img_size[0], self.img_size[1]),interpolation=cv2.INTER_NEAREST)
-            lbl = lbl / 255.0
+            lbl = self.encode_segmap(np.array(lbl, dtype=np.uint8))
 
         else:
             lbl = np.zeros((self.img_size[0], self.img_size[1]), dtype=np.uint8)
@@ -105,11 +104,11 @@ class REFUGE(data.Dataset):
             img, lbl = aug['image'], aug['mask']
 
             # data augmentation for teacher
-            aug = self.augmentations(image=img, mask=lbl)
+            aug = self.aug_for_target(image=img, mask=lbl)
             img0, lbl0 = aug['image'], aug['mask']
 
         else:
-            img0, lbl0 = img.copy(), lbl.copy()
+            img, lbl = img.copy(), lbl.copy()
 
 
         if self.is_transform:
@@ -125,11 +124,12 @@ class REFUGE(data.Dataset):
     def _glob_img_files(self):
         """Check if dataset is download and in right place."""
         if self.domain == 'REFUGE_SRC':
-            self.image_files = glob.glob(os.path.join(self.img_dir, '*.bmp'))
+            self.image_files = glob.glob(os.path.join(self.img_dir, '*.jpg'))
         if self.domain == 'REFUGE_DST':
-            self.image_files = glob.glob(os.path.join(self.img_dir, '*.bmp'))
+            self.image_files = glob.glob(os.path.join(self.img_dir, '*.jpg'))
         if self.domain == 'REFUGE_TEST':
-            self.image_files = glob.glob(os.path.join(self.img_dir, '*.bmp'))
+            self.image_files = glob.glob(os.path.join(self.img_dir, '*.jpg'))
+
 
     def transform(self, img, lbl):
         """transform
@@ -139,15 +139,33 @@ class REFUGE(data.Dataset):
         img = m.imresize(
             img, (self.img_size[0], self.img_size[1])
         )  # uint8 with RGB mode
-
+        img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
 
         img = img.transpose(2, 0, 1)
+
+        classes = np.unique(lbl)
+        lbl = lbl.astype(float)
+        lbl = cv2.resize(lbl, (self.img_size[0], self.img_size[1]), interpolation=cv2.INTER_NEAREST)
+        lbl = lbl.astype(int)
+
+        if not np.all(classes == np.unique(lbl)):
+            print("WARN: resizing labels yielded fewer classes")
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).long()
 
         return img, lbl
 
+
+    def encode_segmap(self, mask):
+        # Put all void classes to zero
+        classes = np.unique(mask)
+        for each_class in classes:
+            assert each_class in self.class_map.keys()
+
+        for _validc in self.class_map.keys():
+            mask[mask == _validc] = self.class_map[_validc]
+        return mask
 
 
