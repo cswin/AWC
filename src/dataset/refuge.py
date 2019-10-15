@@ -18,11 +18,11 @@ import torch.utils.data as data
 
 
 
-src_image_dir = '../data/training_crop_s600/data'
-src_mask_dir = '../data/training_crop_s600/label'
-tgt_image_dir ='../data/test_crop_s460/data'
-test_image_dir = '../data/validation_crop_s460/data'
-test_mask_dir = '../data/validation_crop_s460/label'
+src_image_dir = '../data/train_crop_polar_s600/data'
+src_mask_dir = '../data/train_crop_polar_s600/label'
+tgt_image_dir ='../data/test_crop_polar_s460/data'
+test_image_dir = '../data/validation_crop_polar_s460/data'
+test_mask_dir = '../data/validation_crop_polar_s460/label'
 
 
 class REFUGE(data.Dataset):
@@ -108,7 +108,7 @@ class REFUGE(data.Dataset):
             img0, lbl0 = aug['image'], aug['mask']
 
         else:
-            img, lbl = img.copy(), lbl.copy()
+            img0, lbl0 = img.copy(), lbl.copy()
 
 
         if self.is_transform:

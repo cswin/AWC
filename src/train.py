@@ -186,7 +186,7 @@ def main():
                 # [B, C_out, H_out, W_out] = sup_interp_pred.shape
                 # sup_interp_pred = sup_interp_pred.view(B, H_out, W_out, C_out)
 
-                seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred)
+                seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.gpu) #you also can use dice loss
                 seg_losses.append(seg_loss)
                 total_seg_loss += seg_loss * unsup_weights[idx]
                 seg_loss_vals[idx] += seg_loss.item() / args.iter_size
@@ -288,14 +288,14 @@ def main():
         print(log_str)
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
-            filename = 'UNet' + str(args.num_steps_stop) + 'v9.pth'
+            filename = 'UNet' + str(args.num_steps_stop) + 'v13.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
-            filename = 'UNet' + str(i_iter) + 'v9.pth'
+            filename = 'UNet' + str(i_iter) + 'v13.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             teacher_net.cuda(args.gpu)
