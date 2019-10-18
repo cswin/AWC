@@ -173,8 +173,7 @@ def main():
                     param.requires_grad = False
 
             _, src_batch = src_loader_iter.__next__()
-            src_images, src_labels, _, _, _ = src_batch
-            src_labels = Variable(src_labels).cuda(args.gpu)
+            _, _, src_images, src_labels, _ = src_batch
             src_images = Variable(src_images).cuda(args.gpu)
 
             # calculate the segmentation losses
@@ -183,29 +182,38 @@ def main():
             for idx, sup_pred in enumerate(sup_preds):
                 sup_interp_pred = (sup_pred)
 
-                # [B, C_out, H_out, W_out] = sup_interp_pred.shape
-                # sup_interp_pred = sup_interp_pred.view(B, H_out, W_out, C_out)
-
                 seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.gpu) #you also can use dice loss
                 seg_losses.append(seg_loss)
                 total_seg_loss += seg_loss * unsup_weights[idx]
                 seg_loss_vals[idx] += seg_loss.item() / args.iter_size
-
-            total_seg_loss = total_seg_loss / args.iter_size
-            total_seg_loss.backward()
-            student_optimizer.step()  # to have a trained model prepared for unsupevised learning and weigths adaptation.
 
             _, tgt_batch = tgt_loader_iter.__next__()
             tgt_images0, tgt_lbl0, tgt_images1, tgt_lbl1, _ = tgt_batch
             tgt_images0 = Variable(tgt_images0).cuda(args.gpu)
             tgt_images1 = Variable(tgt_images1).cuda(args.gpu)
 
+            # calculate ensemble losses
+            stu_unsup_preds = list(student_net(tgt_images1))
+            tea_unsup_preds = teacher_net(tgt_images0)
+            total_mse_loss = 0
+            for idx in range(n_discriminators):
+                stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
+                tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
+
+                unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
+                unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
+                total_mse_loss += unsup_loss * unsup_weights[idx]
+
+
+            total_mse_loss = total_mse_loss / args.iter_size
+
+
             # As the requires_grad is set to False in the discriminator, the
             # gradients are only accumulated in the generator, the target
             # student network is optimized to make the outputs of target domain
             # images close to the outputs of source domain images
             stu_unsup_preds = list(student_net(tgt_images0))
-            d_outs, loss = [], 0
+            d_outs, total_adv_loss = [], 0
             for idx in range(n_discriminators):
                 stu_unsup_interp_pred = (stu_unsup_preds[idx])
                 d_outs.append(discriminators[idx](stu_unsup_interp_pred))
@@ -214,28 +222,11 @@ def main():
                 labels = Variable(labels).cuda(args.gpu)
                 adv_tgt_loss = calc_bce_loss(d_outs[idx], labels)
 
-                loss += lambda_adv_tgts[idx] * adv_tgt_loss
+                total_adv_loss += lambda_adv_tgts[idx] * adv_tgt_loss
                 adv_tgt_loss_vals[idx] += adv_tgt_loss.item() / args.iter_size
-            loss = loss / args.iter_size
-            loss.backward()
-            student_optimizer.step()
 
-            # calculate ensemble losses
-            stu_unsup_preds = list(student_net(tgt_images0))
-            tea_unsup_preds = list(teacher_net(tgt_images1))
-            loss_expr = 0
-            for idx in range(n_discriminators):
-                stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
-                tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
+            total_adv_loss = total_adv_loss / args.iter_size
 
-                unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
-                unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
-                loss_expr += unsup_loss * unsup_weights[idx]
-
-            loss_expr = loss_expr / args.iter_size
-            loss_expr.backward()
-            student_optimizer.step()
-            teacher_optimizer.step()
 
             # requires_grad is set to True in the discriminator,  we only
             # accumulate gradients in the discriminators, the discriminators are
@@ -274,6 +265,13 @@ def main():
         for d_optimizer in d_optimizers:
             d_optimizer.step()
 
+
+        total_loss = total_seg_loss + total_adv_loss + total_mse_loss
+        total_loss.backward()
+        student_optimizer.step()
+        teacher_optimizer.step()
+
+
         log_str = 'iter = {0:7d}/{1:7d}'.format(i_iter, args.num_steps)
         log_str += ', total_seg_loss = {0:.3f} '.format(total_seg_loss)
         templ = 'seg_losses = [' + ', '.join(['%.2f'] * len(seg_loss_vals))
@@ -288,14 +286,14 @@ def main():
         print(log_str)
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
-            filename = 'UNet' + str(args.num_steps_stop) + 'v13.pth'
+            filename = 'UNet' + str(args.num_steps_stop) + '.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
-            filename = 'UNet' + str(i_iter) + 'v13.pth'
+            filename = 'UNet' + str(i_iter) + '.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             teacher_net.cuda(args.gpu)
