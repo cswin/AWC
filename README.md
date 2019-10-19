@@ -23,7 +23,7 @@ poses a signicant challenge: domain shift, which leads to performance
 degradation when applying the deep learning models to new testing do-
 mains. In this paper, we propose a novel unsupervised domain adap-
 tation framework, called Collaborative Feature Ensembling Adaptation
-(CFEA), to eectively overcome this challenge. Our proposed CFEA
+(CFEA), to effectively overcome this challenge. Our proposed CFEA
 is an interactive paradigm which presents an exquisite of collaborative
 adaptation through both adversarial learning and ensembling weights. In
 particular, we simultaneously achieve domain-invariance and maintain an
@@ -37,8 +37,12 @@ experimental results demonstrate that our CFEA model can overcome
 performance degradation and outperform the state-of-the-art methods
 in segmenting retinal optic disc and cup from fundus images.
 
-## 2. Network Structure
-![Image of Network](figures/framework1.pdf)
+### 2. Domain shift 
+
+![Image of Domain shift](figures/domains.jpg)
+
+## 3. Network Structure
+![Image of Network](figures/framework.jpg)
 
  
 ### Usage
