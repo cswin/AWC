@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import cv2
 import numpy as np
 import scipy.io as sio
@@ -15,8 +15,8 @@ from skimage.io import imsave
 
 import Model_DiscSeg as DiscModel
 
-ROI_size_list = [400, 500, 600, 700, 800]
-# ROI_size_list = [460]
+# ROI_size_list = [400, 500, 600, 700, 800]
+ROI_size_list = [460]
 DiscROI_size = 460 # 460x460 for validation and test dataset;  600x600 for training
 DiscSeg_size = 640  # input size to the disc detection model
 
@@ -27,8 +27,8 @@ mask_data_type = '.bmp'
 Original_vali_img_path = '../../data/Validation400/'
 Original_Mask_img_path = '../../data/Validation400-GT/Disc_Cup_Masks/'
 
-Image_save_path = '../../data/validation_crop_polar_sall/data/'
-MaskImage_save_path = '../../data/validation_crop_polar_sall/label/'
+Image_save_path = '../../data/validation_crop_cartesian_s460/data/'
+MaskImage_save_path = '../../data/validation_crop_cartesian_s460/label/'
 
 if not os.path.exists(Image_save_path):
     os.makedirs(Image_save_path)
@@ -36,8 +36,8 @@ if not os.path.exists(Image_save_path):
 if not os.path.exists(MaskImage_save_path):
     os.makedirs(MaskImage_save_path)
 
-is_polar_coordinate =True  # in MICCAI version, this is false.
-is_only_image = False #for target domain we do not have masks, then it is True
+is_polar_coordinate =False  # in MICCAI version, this is false.
+is_only_image = False #for target domain training images we do not have masks, then it is True
 
 file_train_list = [file for file in os.listdir(Original_vali_img_path) if file.lower().endswith(train_data_type)]
 print(str(len(file_train_list)))
@@ -167,7 +167,8 @@ for lineIdx in range(0, len(file_train_list)):
 
             ROI_img_result = rotate(cv2.linearPolar(org_img_disc_region, (DiscROI_size / 2, DiscROI_size / 2), DiscROI_size / 2,
                                             cv2.INTER_NEAREST + cv2.WARP_FILL_OUTLIERS), -90)
-
+        else:
+            ROI_img_result = org_img_disc_region
 
 
         filename_ROI_Img = '{}_{}{}'.format(temp_txt[0][:nameLen - 4], DiscROI_size, train_data_type)

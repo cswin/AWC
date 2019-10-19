@@ -6,10 +6,11 @@ from packaging import version
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 from PIL import Image
 import matplotlib.pyplot as plt
-
+import cv2
+from skimage.transform import rotate
 import torch
 from torch.autograd import Variable
 
@@ -21,10 +22,12 @@ from dataset.refuge import REFUGE
 
 NUM_CLASSES = 3
 NUM_STEPS = 512 # Number of images in the validation set.
-RESTORE_FROM = '../data/snapshots/UNet140000v12_Vmiccai.pth'
-SAVE_PATH = '../data/result_UNet140000v12_Vmiccai/'
+RESTORE_FROM = '../data/snapshots/UNet70000v16_JointOpt_polar_multiScale.pth'
+SAVE_PATH = '../data/result_UNet70000v16_JointOpt_polar_multiScale/'
 MODEL = 'Unet'
 BATCH_SIZE = 5
+is_polar = True
+ROI_size = 460
 
 print(RESTORE_FROM)
 
@@ -67,7 +70,12 @@ def get_arguments():
                         help="choose gpu device.")
     parser.add_argument("--save", type=str, default=SAVE_PATH,
                         help="Path to save result.")
+    parser.add_argument("--is_polar", type=bool, default=False,
+                        help="If proceed images in polar coordinate. MICCAI version is false")
+    parser.add_argument("--ROI_size", type=int, default=460,
+                        help="Size of ROI.")
     return parser.parse_args()
+
 
 
 
@@ -116,7 +124,40 @@ def main():
             pred = np.asarray(np.argmax(pred, axis=2), dtype=np.uint8)
             output_col = colorize_mask(pred)
 
+            if is_polar:
+
+                # plt.imshow(output_col)
+                # plt.show()
+
+
+                output_col = np.array(output_col)
+                output_col[output_col == 0] = 0
+                output_col[output_col == 1] = 128
+                output_col[output_col == 2] = 255
+
+                # plt.imshow(output_col)
+                # plt.show()
+
+                output_col = cv2.linearPolar(rotate(output_col, 90), (args.ROI_size / 2, args.ROI_size / 2),
+                                             args.ROI_size / 2, cv2.WARP_FILL_OUTLIERS + cv2.WARP_INVERSE_MAP)
+
+                # plt.imshow(output_col)
+                # plt.show()
+
+                output_col = np.array(output_col * 255, dtype=np.uint8)
+                output_col[output_col > 200] = 210
+                output_col[output_col == 0] = 255
+                output_col[output_col == 210] = 0
+                output_col[(output_col > 0) & (output_col < 255)] = 128
+
+                output_col = Image.fromarray(output_col)
+
+                # plt.imshow(output_col)
+                # plt.show()
+
             one_name = one_name.split('/')[-1]
+            if len(one_name.split('_'))>0:
+                one_name = one_name[:-4]
             #pred.save('%s/%s.bmp' % (args.save, one_name))
             output_col = output_col.convert('L')
 
