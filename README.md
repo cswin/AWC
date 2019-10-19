@@ -79,6 +79,6 @@ in segmenting retinal optic disc and cup from fundus images.
   organization={Springer}
 }
 ```
-### Questions
+## 7. Questions
 
 Further questions, please feel free to contact `pliu1 at ufl.edu` or `bkong at uncc.edu`
