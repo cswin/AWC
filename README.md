@@ -14,7 +14,7 @@ This is a Pytorch implementation of the paper "CFEA: Collaborative Feature Ensem
 * pytoch 1.0.0
 * albumentations
 
-## 1。 Abstract
+## 1. Abstract
 
 Recently, deep neural networks have demonstrated compara-
 ble and even better performance with board-certied ophthalmologists in
