@@ -37,7 +37,7 @@ experimental results demonstrate that our CFEA model can overcome
 performance degradation and outperform the state-of-the-art methods
 in segmenting retinal optic disc and cup from fundus images.
 
-### 2. Domain shift 
+## 2. Domain shift 
 
 ![Image of Domain shift](figures/domains.jpg)
 
@@ -45,7 +45,7 @@ in segmenting retinal optic disc and cup from fundus images.
 ![Image of Network](figures/framework.jpg)
 
  
-### Usage
+## 4. Training and testing
 1.  Get the data from https://refuge.grand-challenge.org and go to src/data_preprocess/generate_ROI.py 
 
 2. Train the model:
@@ -59,7 +59,7 @@ in segmenting retinal optic disc and cup from fundus images.
    ```shell
    python predict.py
    ```
-
+## 5. Unsupervised Regmentation Results
    
 ### Questions
 
