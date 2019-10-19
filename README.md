@@ -61,14 +61,14 @@ in segmenting retinal optic disc and cup from fundus images.
    ```
 ## 5. Unsupervised Segmentation Results
 
-###1. Results of adapting source to target
+### 1. Results of adapting source to target
 ![Image of result-table](figures/result-tabel.jpg)
  
  
-###2. The visual examples of optic disc and cup segmentation
+### 2. The visual examples of optic disc and cup segmentation
 ![Image of result-fig](figures/result-fig.jpg)
 
-### 6. Citation
+## 6. Citation
 ```
 @inproceedings{liu2019cfea,
   title={CFEA: Collaborative Feature Ensembling Adaptation for Domain Adaptation in Unsupervised Optic Disc and Cup Segmentation},
