@@ -46,21 +46,39 @@ in segmenting retinal optic disc and cup from fundus images.
 
  
 ## 4. Training and testing
-1.  Get the data from https://refuge.grand-challenge.org and go to src/data_preprocess/generate_ROI.py 
+### 1.  Get the data from https://refuge.grand-challenge.org and go to src/data_preprocess/generate_ROI.py 
 
-2. Train the model:
+### 2. Train the model:
  
    ```shell
    cd src
    python train.py
    ```
-3. Predict the masks:
+### 3. Predict the masks:
 
    ```shell
    python predict.py
    ```
-## 5. Unsupervised Regmentation Results
-   
+## 5. Unsupervised Segmentation Results
+
+###1. Results of adapting source to target
+![Image of result-table](figures/result-tabel.jpg)
+ 
+ 
+###2. The visual examples of optic disc and cup segmentation
+![Image of result-fig](figures/result-fig.jpg)
+
+### 6. Citation
+```
+@inproceedings{liu2019cfea,
+  title={CFEA: Collaborative Feature Ensembling Adaptation for Domain Adaptation in Unsupervised Optic Disc and Cup Segmentation},
+  author={Liu, Peng and Kong, Bin and Li, Zhongyu and Zhang, Shaoting and Fang, Ruogu},
+  booktitle={International Conference on Medical Image Computing and Computer-Assisted Intervention},
+  pages={521--529},
+  year={2019},
+  organization={Springer}
+}
+```
 ### Questions
 
 Further questions, please feel free to contact `pliu1 at ufl.edu` or `bkong at uncc.edu`
