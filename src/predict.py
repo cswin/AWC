@@ -80,7 +80,6 @@ def get_arguments():
     return parser.parse_args()
 
 
-
 def main():
     """Create the model and start the evaluation process."""
 

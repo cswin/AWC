@@ -22,7 +22,6 @@ LEARNING_RATE_D = 2.5e-5
 
 class_weights=[0.4,0.4,0.2]
 
-
 def get_arguments():
     """Parse all the arguments provided from the CLI.
 

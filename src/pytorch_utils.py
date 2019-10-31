@@ -111,5 +111,3 @@ def dice_loss(true, logits, eps=1e-7):
     cardinality = torch.sum(probas + true_1_hot, dims)
     dice_loss = (2. * intersection / (cardinality + eps)).mean()
     return (1 - dice_loss)
-
-

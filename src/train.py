@@ -1,5 +1,4 @@
 import os
-
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import torch
@@ -70,7 +69,6 @@ aug_teacher = Compose([
     ], p=0.2),
     HueSaturationValue(p=0.2),
     RandomGamma(p=0.2)])
-
 
 def main():
     """Create the model and start the training."""

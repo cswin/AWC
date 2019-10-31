@@ -29,7 +29,6 @@ test_mask_dir = '../data/valiMaskImage_save_path_460/'
 # test_image_dir = '../data/validation_crop_polar_s460/data'
 # test_mask_dir = '../data/validation_crop_polar_s460/label'
 
-
 class REFUGE(data.Dataset):
     """REFUGE Dataset.
 

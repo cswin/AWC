@@ -278,7 +278,6 @@ if __name__ == '__main__':
 
     results_folder = '../../data/result_UNet120000_v22_refineNet/'
     gt_folder = '../../data/valiMaskImage_save_path_460/'
-
     output_path = results_folder
     export_table = True
     evaluate_segmentation_results(results_folder, gt_folder, output_path, export_table)
