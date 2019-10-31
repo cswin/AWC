@@ -17,12 +17,17 @@ import torch
 import torch.utils.data as data
 
 
+src_image_dir = '../data/trainImage_save_path_600_aug'
+src_mask_dir = '../data/MaskImage_save_path_600_aug'
+tgt_image_dir ='../data/TestImage_save_path_460_aug/'
+test_image_dir = '../data/valiImage_save_path_460/'
+test_mask_dir = '../data/valiMaskImage_save_path_460/'
 
-src_image_dir = '../data/train_crop_polar_s600/data'
-src_mask_dir = '../data/train_crop_polar_s600/label'
-tgt_image_dir ='../data/test_crop_polar_s460/data'
-test_image_dir = '../data/validation_crop_polar_s460/data'
-test_mask_dir = '../data/validation_crop_polar_s460/label'
+# src_image_dir = '../data/train_crop_polar_s600/data'
+# src_mask_dir = '../data/train_crop_polar_s600/label'
+# tgt_image_dir ='../data/test_crop_polar_s460/data'
+# test_image_dir = '../data/validation_crop_polar_s460/data'
+# test_mask_dir = '../data/validation_crop_polar_s460/label'
 
 
 class REFUGE(data.Dataset):

@@ -1,11 +1,11 @@
 import argparse
 
-BATCH_SIZE = 5
+BATCH_SIZE = 1
 ITER_SIZE = 1
 NUM_WORKERS = 0
 INPUT_SIZE = '400,400'
 TGT_SIZE = '400,400'
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-4
 MOMENTUM = 0.9
 NUM_CLASSES = 3
 NUM_STEPS = 250000
@@ -13,12 +13,14 @@ NUM_STEPS_STOP = 200000  # early stopping
 POWER = 0.9
 RESTORE_FROM = ''
 SAVE_NUM_IMAGES = 2
-SAVE_PRED_EVERY = 500
+SAVE_PRED_EVERY = 1000
 SNAPSHOT_DIR = '../data/snapshots/'
 WEIGHT_DECAY = 0.0005
 TEACHER_ALPHA = 0.99
 
 LEARNING_RATE_D = 2.5e-5
+
+class_weights=[0.4,0.4,0.2]
 
 
 def get_arguments():
@@ -108,5 +110,10 @@ def get_arguments():
                         help="lambda_adv for adversarial training.")
     parser.add_argument("--lambda-adv-tgt9", type=float, default=0.6,
                         help="lambda_adv for adversarial training.")
+
+    parser.add_argument("--class_weights", type=float, default=[0.4,0.4,0.2],
+                        help="segmentation pixel-wise class weights.")
+
+    parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
 
     return parser.parse_args()

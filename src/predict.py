@@ -17,20 +17,20 @@ from torch.autograd import Variable
 import torch.nn as nn
 from torch.utils import data
 
-from models.unet import UNet
+# from models.unet import UNet
+from models.networks import R2AttU_Net
 from dataset.refuge import REFUGE
 
 NUM_CLASSES = 3
 NUM_STEPS = 512 # Number of images in the validation set.
-RESTORE_FROM = '../data/snapshots/UNet70000v16_JointOpt_polar_multiScale.pth'
-SAVE_PATH = '../data/result_UNet70000v16_JointOpt_polar_multiScale/'
+RESTORE_FROM = '../data/snapshots/UNet80000v21_JointOpt_multiScale_R2AttU_Net.pth'
+SAVE_PATH = '../data/result_UNet80000v21_JointOpt_multiScale_R2AttU_Net/'
 MODEL = 'Unet'
-BATCH_SIZE = 5
-is_polar = True
-ROI_size = 460
+BATCH_SIZE = 1
+is_polar = False  #If need to transfer the image and labels to polar coordinates: MICCAI version is False
+ROI_size = 460    #ROI size
 
 print(RESTORE_FROM)
-
 
 palette=[
     255, 255, 255, # black background
@@ -74,10 +74,10 @@ def get_arguments():
                         help="If proceed images in polar coordinate. MICCAI version is false")
     parser.add_argument("--ROI_size", type=int, default=460,
                         help="Size of ROI.")
+
+    parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
+
     return parser.parse_args()
-
-
-
 
 
 
@@ -91,7 +91,8 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    model = UNet(3, n_classes=args.num_classes)
+    # model = UNet(3, n_classes=args.num_classes)
+    model = R2AttU_Net(img_ch=3, output_ch=args.num_classes, t=args.t)
 
     saved_state_dict = torch.load(args.restore_from)
     model.load_state_dict(saved_state_dict)
@@ -156,7 +157,7 @@ def main():
                 # plt.show()
 
             one_name = one_name.split('/')[-1]
-            if len(one_name.split('_'))>0:
+            if len(one_name.split('_'))>1:
                 one_name = one_name[:-4]
             #pred.save('%s/%s.bmp' % (args.save, one_name))
             output_col = output_col.convert('L')

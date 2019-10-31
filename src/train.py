@@ -25,9 +25,9 @@ from albumentations import (
 
 from models.unet import UNet
 from models.discriminator import FCDiscriminator
-from dataset.refuge import REFUGE
+from dataset.refuge_Vmiccai import REFUGE
 from pytorch_utils import (adjust_learning_rate, adjust_learning_rate_D,
-                           calc_mse_loss, Weighted_Jaccard_loss)
+                           calc_mse_loss, Weighted_Jaccard_loss, dice_loss)
 from models import optim_weight_ema
 from arguments import get_arguments
 
@@ -181,8 +181,8 @@ def main():
             seg_losses, total_seg_loss = [], 0
             for idx, sup_pred in enumerate(sup_preds):
                 sup_interp_pred = (sup_pred)
-
-                seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.gpu) #you also can use dice loss
+                # you also can use dice loss like: dice_loss(src_labels, sup_interp_pred)
+                seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.class_weights, args.gpu)
                 seg_losses.append(seg_loss)
                 total_seg_loss += seg_loss * unsup_weights[idx]
                 seg_loss_vals[idx] += seg_loss.item() / args.iter_size
@@ -286,14 +286,14 @@ def main():
         print(log_str)
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
-            filename = 'UNet' + str(args.num_steps_stop) + '.pth'
+            filename = 'UNet' + str(args.num_steps_stop) + '_v18_weightedclass.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
-            filename = 'UNet' + str(i_iter) + '.pth'
+            filename = 'UNet' + str(i_iter) + '_v18_weightedclass.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             teacher_net.cuda(args.gpu)
