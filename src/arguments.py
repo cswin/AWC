@@ -116,4 +116,6 @@ def get_arguments():
 
     parser.add_argument('--t', type=int, default=3, help='t for Recurrent step of R2U_Net or R2AttU_Net')
 
+    parser.add_argument('--encoder_feature_size', type=int, default=512, help='the encoder featues size')
+
     return parser.parse_args()
