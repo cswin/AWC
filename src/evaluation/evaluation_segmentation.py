@@ -276,7 +276,7 @@ def evaluate_segmentation_results(segmentation_folder, gt_folder, output_path=No
 
 if __name__ == '__main__':
 
-    results_folder = '../../data/result_UNet120000_v22_refineNet/'
+    results_folder = '../../data/result_UNet112000_v23_CADA_fine/'
     gt_folder = '../../data/valiMaskImage_save_path_460/'
 
     output_path = results_folder

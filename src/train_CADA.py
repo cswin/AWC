@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import torch
 import torch.nn.functional as F
 from torch.utils import data
@@ -187,8 +187,8 @@ def main():
                 # you also can use dice loss like: dice_loss(src_labels, sup_interp_pred)
                 seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.class_weights, args.gpu)
                 seg_losses.append(seg_loss)
-                total_seg_loss += seg_loss * unsup_weights[idx]
-                seg_loss_vals[idx] += seg_loss.item() / args.iter_size
+                total_seg_loss += seg_loss * unsup_weights[idx]  / args.iter_size
+                seg_loss_vals[idx] += seg_loss * unsup_weights[idx] / args.iter_size
 
 
 
@@ -201,23 +201,25 @@ def main():
             stu_unsup_preds = list(student_net(tgt_images1))
             tea_unsup_preds = teacher_net(tgt_images0)
             total_mse_loss = 0
-            total_encoder_mse_loss = 0
+            # total_encoder_mse_loss = 0
             for idx in range(n_discriminators):
 
-                stu_unsup_probs = F.normalize(stu_unsup_preds[idx],p=2,dim=1) #F.softmax(stu_unsup_preds[idx], dim=-1)
-                tea_unsup_probs = F.normalize(tea_unsup_preds[idx],p=2,dim=1) #F.softmax(tea_unsup_preds[idx], dim=-1)
-
-                if idx == 0:
-                    total_encoder_mse_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
-                    total_encoder_mse_loss = total_encoder_mse_loss / args.iter_size
-                else:
+                # stu_unsup_probs = stu_unsup_preds[idx]
+                # tea_unsup_probs = tea_unsup_preds[idx]
+                # if idx == 0:
+                #     # total_encoder_mse_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
+                #     # total_encoder_mse_loss = total_encoder_mse_loss / args.iter_size
+                # else:
+                if idx > 0:
+                    stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
+                    tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
                     unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
-                    unsup_loss_vals[idx] += unsup_loss.item() / args.iter_size
+                    unsup_loss_vals[idx] += unsup_loss * unsup_weights[idx-1] / args.iter_size
                     total_mse_loss += unsup_loss * unsup_weights[idx-1]
 
 
             total_mse_loss = total_mse_loss / args.iter_size
-            total_encoder_mse_loss = total_encoder_mse_loss / args.iter_size
+            # total_encoder_mse_loss = total_encoder_mse_loss / args.iter_size
 
             # As the requires_grad is set to False in the discriminator, the
             # gradients are only accumulated in the generator, the target
@@ -235,8 +237,8 @@ def main():
                 if idx == 0:
                     total_encoder_adv_loss = adv_tgt_loss
                 else:
-                    total_adv_loss += lambda_adv_tgts[idx-1] * adv_tgt_loss
-                    adv_tgt_loss_vals[idx] += adv_tgt_loss.item() / args.iter_size
+                    total_adv_loss += lambda_adv_tgts[idx-1] * adv_tgt_loss / args.iter_size
+                    adv_tgt_loss_vals[idx] += lambda_adv_tgts[idx-1] * adv_tgt_loss / args.iter_size
 
             total_adv_loss = total_adv_loss / args.iter_size
             total_encoder_adv_loss = total_encoder_adv_loss / args.iter_size
@@ -280,7 +282,7 @@ def main():
             d_optimizer.step()
 
 
-        total_loss = total_seg_loss + total_adv_loss + total_encoder_adv_loss + total_mse_loss + total_encoder_mse_loss
+        total_loss = total_seg_loss + total_adv_loss + total_encoder_adv_loss + total_mse_loss
         total_loss.backward()
         student_optimizer.step()
         teacher_optimizer.step()
@@ -289,7 +291,7 @@ def main():
         log_str = 'iter = {0:7d}/{1:7d}'.format(i_iter, args.num_steps)
         log_str += ', total_seg_loss = {0:.3f} '.format(total_seg_loss)
         log_str += ', total_encoder_adv_loss = {0:.3f} '.format(total_encoder_adv_loss)
-        log_str += ', total_encoder_mse_loss = {0:.3f} '.format(total_encoder_mse_loss)
+        # log_str += ', total_encoder_mse_loss = {0:.3f} '.format(total_encoder_mse_loss)
         templ = 'seg_losses = [' + ', '.join(['%.2f'] * len(seg_loss_vals[:4]))
         log_str += templ % tuple(seg_loss_vals[:4]) + '] '
         templ = 'ens_losses = [' + ', '.join(['%.5f'] * len(unsup_loss_vals[1:]))

@@ -18,13 +18,13 @@ import torch.nn as nn
 from torch.utils import data
 
 # from models.unet import UNet
-from models.networks import R2AttU_Net
+from models.unet_fine import UNet
 from dataset.refuge import REFUGE
 
 NUM_CLASSES = 3
 NUM_STEPS = 512 # Number of images in the validation set.
-RESTORE_FROM = '../data/snapshots/UNet80000v21_JointOpt_multiScale_R2AttU_Net.pth'
-SAVE_PATH = '../data/result_UNet80000v21_JointOpt_multiScale_R2AttU_Net/'
+RESTORE_FROM = '../data/snapshots/UNet112000_v23_CADA_fine.pth'
+SAVE_PATH = '../data/result_UNet112000_v23_CADA_fine/'
 MODEL = 'Unet'
 BATCH_SIZE = 1
 is_polar = False  #If need to transfer the image and labels to polar coordinates: MICCAI version is False
@@ -91,8 +91,8 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    # model = UNet(3, n_classes=args.num_classes)
-    model = R2AttU_Net(img_ch=3, output_ch=args.num_classes, t=args.t)
+    model = UNet(3, n_classes=args.num_classes)
+    # model = UNet(img_ch=3, output_ch=args.num_classes, t=args.t)
 
     saved_state_dict = torch.load(args.restore_from)
     model.load_state_dict(saved_state_dict)
@@ -114,9 +114,9 @@ def main():
             print('%d processd' % index)
         image, label, _, _, name = batch
         if args.model == 'Unet':
-            _,_,_,_, output2  = model(Variable(image, volatile=True).cuda(gpu0))
+            _,_,_,_,_, output  = model(Variable(image, volatile=True).cuda(gpu0))
 
-            output = interp(output2).cpu().data.numpy()
+            output = interp(output).cpu().data.numpy()
 
 
         for idx, one_name in enumerate(name):
