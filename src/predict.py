@@ -17,8 +17,7 @@ from torch.autograd import Variable
 import torch.nn as nn
 from torch.utils import data
 
-# from models.unet import UNet
-from models.networks import R2AttU_Net
+from models.unet import UNet
 from dataset.refuge import REFUGE
 
 NUM_CLASSES = 3
@@ -90,8 +89,8 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    # model = UNet(3, n_classes=args.num_classes)
-    model = R2AttU_Net(img_ch=3, output_ch=args.num_classes, t=args.t)
+    model = UNet(3, n_classes=args.num_classes)
+
 
     saved_state_dict = torch.load(args.restore_from)
     model.load_state_dict(saved_state_dict)
