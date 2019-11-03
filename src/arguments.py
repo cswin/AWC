@@ -1,6 +1,6 @@
 import argparse
 
-BATCH_SIZE = 1
+BATCH_SIZE = 3
 ITER_SIZE = 1
 NUM_WORKERS = 0
 INPUT_SIZE = '400,400'
@@ -82,15 +82,15 @@ def get_arguments():
         help='unsupervised loss weight')
     parser.add_argument('--unsup_weight4', type=float, default=0.1,
         help='unsupervised loss weight')
-    parser.add_argument('--unsup_weight5', type=float, default=0.1,
+    parser.add_argument('--unsup_weight5', type=float, default=0,
         help='unsupervised loss weight')
-    parser.add_argument('--unsup_weight6', type=float, default=0.1,
+    parser.add_argument('--unsup_weight6', type=float, default=0,
         help='unsupervised loss weight')
-    parser.add_argument('--unsup_weight7', type=float, default=0.1,
+    parser.add_argument('--unsup_weight7', type=float, default=0,
         help='unsupervised loss weight')
-    parser.add_argument('--unsup_weight8', type=float, default=0.1,
+    parser.add_argument('--unsup_weight8', type=float, default=0,
         help='unsupervised loss weight')
-    parser.add_argument('--unsup_weight9', type=float, default=0.6,
+    parser.add_argument('--unsup_weight9', type=float, default=1,
         help='unsupervised loss weight')
     parser.add_argument("--lambda-adv-tgt1", type=float, default=0.5,
                         help="lambda_adv for adversarial training.")
@@ -100,15 +100,15 @@ def get_arguments():
                         help="lambda_adv for adversarial training.")
     parser.add_argument("--lambda-adv-tgt4", type=float, default=0.1,
                         help="lambda_adv for adversarial training.")
-    parser.add_argument("--lambda-adv-tgt5", type=float, default=0.1,
+    parser.add_argument("--lambda-adv-tgt5", type=float, default=0.0,
                         help="lambda_adv for adversarial training.")
-    parser.add_argument("--lambda-adv-tgt6", type=float, default=0.1,
+    parser.add_argument("--lambda-adv-tgt6", type=float, default=0.0,
                         help="lambda_adv for adversarial training.")
-    parser.add_argument("--lambda-adv-tgt7", type=float, default=0.1,
+    parser.add_argument("--lambda-adv-tgt7", type=float, default=0.0,
                         help="lambda_adv for adversarial training.")
-    parser.add_argument("--lambda-adv-tgt8", type=float, default=0.1,
+    parser.add_argument("--lambda-adv-tgt8", type=float, default=0.0,
                         help="lambda_adv for adversarial training.")
-    parser.add_argument("--lambda-adv-tgt9", type=float, default=0.6,
+    parser.add_argument("--lambda-adv-tgt9", type=float, default=1,
                         help="lambda_adv for adversarial training.")
 
     parser.add_argument("--class_weights", type=float, default=[0.4,0.4,0.2],

@@ -182,13 +182,14 @@ def main():
             # calculate the segmentation losses
             sup_preds = list(student_net(src_images))
             seg_losses, total_seg_loss = [], 0
-            for idx, sup_pred in enumerate(sup_preds[1:]):
-                sup_interp_pred = (sup_pred)
-                # you also can use dice loss like: dice_loss(src_labels, sup_interp_pred)
-                seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.class_weights, args.gpu)
-                seg_losses.append(seg_loss)
-                total_seg_loss += seg_loss * unsup_weights[idx]  / args.iter_size
-                seg_loss_vals[idx] += seg_loss * unsup_weights[idx] / args.iter_size
+            for idx, sup_pred in enumerate(sup_preds):
+                if idx >= 1:
+                    sup_interp_pred = (sup_pred)
+                    # you also can use dice loss like: dice_loss(src_labels, sup_interp_pred)
+                    seg_loss = Weighted_Jaccard_loss(src_labels, sup_interp_pred, args.gpu)
+                    seg_losses.append(seg_loss)
+                    total_seg_loss += seg_loss * unsup_weights[idx-1]  / args.iter_size
+                    seg_loss_vals[idx-1] += seg_loss * unsup_weights[idx-1] / args.iter_size
 
 
 
@@ -210,11 +211,11 @@ def main():
                 #     # total_encoder_mse_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
                 #     # total_encoder_mse_loss = total_encoder_mse_loss / args.iter_size
                 # else:
-                if idx > 0:
+                if idx >= 1:
                     stu_unsup_probs = F.softmax(stu_unsup_preds[idx], dim=-1)
                     tea_unsup_probs = F.softmax(tea_unsup_preds[idx], dim=-1)
                     unsup_loss = calc_mse_loss(stu_unsup_probs, tea_unsup_probs, args.batch_size)
-                    unsup_loss_vals[idx] += unsup_loss * unsup_weights[idx-1] / args.iter_size
+                    unsup_loss_vals[idx-1] += unsup_loss * unsup_weights[idx-1] / args.iter_size
                     total_mse_loss += unsup_loss * unsup_weights[idx-1]
 
 
@@ -238,7 +239,7 @@ def main():
                     total_encoder_adv_loss = adv_tgt_loss
                 else:
                     total_adv_loss += lambda_adv_tgts[idx-1] * adv_tgt_loss / args.iter_size
-                    adv_tgt_loss_vals[idx] += lambda_adv_tgts[idx-1] * adv_tgt_loss / args.iter_size
+                    adv_tgt_loss_vals[idx-1] += lambda_adv_tgts[idx-1] * adv_tgt_loss / args.iter_size
 
             total_adv_loss = total_adv_loss / args.iter_size
             total_encoder_adv_loss = total_encoder_adv_loss / args.iter_size
@@ -292,26 +293,26 @@ def main():
         log_str += ', total_seg_loss = {0:.3f} '.format(total_seg_loss)
         log_str += ', total_encoder_adv_loss = {0:.3f} '.format(total_encoder_adv_loss)
         # log_str += ', total_encoder_mse_loss = {0:.3f} '.format(total_encoder_mse_loss)
-        templ = 'seg_losses = [' + ', '.join(['%.2f'] * len(seg_loss_vals[:4]))
-        log_str += templ % tuple(seg_loss_vals[:4]) + '] '
-        templ = 'ens_losses = [' + ', '.join(['%.5f'] * len(unsup_loss_vals[1:]))
-        log_str += templ % tuple(unsup_loss_vals[1:]) + '] '
-        templ = 'adv_losses = [' + ', '.join(['%.2f'] * len(adv_tgt_loss_vals[1:]))
-        log_str += templ % tuple(adv_tgt_loss_vals[1:]) + '] '
+        templ = 'seg_losses = [' + ', '.join(['%.2f'] * len(seg_loss_vals))
+        log_str += templ % tuple(seg_loss_vals) + '] '
+        templ = 'ens_losses = [' + ', '.join(['%.5f'] * len(unsup_loss_vals))
+        log_str += templ % tuple(unsup_loss_vals) + '] '
+        templ = 'adv_losses = [' + ', '.join(['%.2f'] * len(adv_tgt_loss_vals))
+        log_str += templ % tuple(adv_tgt_loss_vals) + '] '
         templ = 'd_losses = [' + ', '.join(['%.2f'] * len(d_loss_vals))
         log_str += templ % tuple(d_loss_vals) + '] '
 
         print(log_str)
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
-            filename = 'UNet' + str(args.num_steps_stop) + '_v23_CADA_fine.pth'
+            filename = 'UNet' + str(args.num_steps_stop) + '_v24_CADA_encoder_oneOutput.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
-            filename = 'UNet' + str(i_iter) + '_v23_CADA_fine.pth'
+            filename = 'UNet' + str(i_iter) + '_v24_CADA_encoder_oneOutput.pth'
             torch.save(teacher_net.cpu().state_dict(),
                        os.path.join(args.snapshot_dir, filename))
             teacher_net.cuda(args.gpu)
