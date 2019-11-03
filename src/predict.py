@@ -6,7 +6,7 @@ from packaging import version
 
 import os
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
@@ -23,8 +23,8 @@ from dataset.refuge import REFUGE
 
 NUM_CLASSES = 3
 NUM_STEPS = 512 # Number of images in the validation set.
-RESTORE_FROM = '../data/snapshots/UNet112000_v23_CADA_fine.pth'
-SAVE_PATH = '../data/result_UNet112000_v23_CADA_fine/'
+RESTORE_FROM = '../data/snapshots/UNet130000_v23_CADA_fine.pth'
+SAVE_PATH = '../data/result_UNet130000_v23_CADA_fine/'
 MODEL = 'Unet'
 BATCH_SIZE = 1
 is_polar = False  #If need to transfer the image and labels to polar coordinates: MICCAI version is False
