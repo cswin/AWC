@@ -2,7 +2,7 @@
 
 ### Paper versions
 
-[**MICCAI 2019 version**](https://arxiv.org/pdf/1908.06912.pdf)
+[**MICCAI 2019 version**](https://arxiv.org/pdf/1910.07638.pdf)
 
 ### Pytorch implementation of CFEA.
 
